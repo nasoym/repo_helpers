@@ -1,0 +1,12 @@
+#!/bin/bash
+
+: ${FOLDERS:="."}
+: ${GIT_COMMANDS:="$@"}
+: ${GIT_COMMANDS:="status -s"}
+
+find ${FOLDERS} -maxdepth 2 -type d -path "*/.git"  \
+  | parallel -k "\
+    echo -e '\033[0;35m$(printf "=%.s" {1..10}) {//}\033[0m'; \
+    git --git-dir={} --work-tree={//} ${GIT_COMMANDS} \
+  "
+

@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -ef -o pipefail
+source $(dirname $0)/bash_helpers/bash_helpers
+
+while getopts ":-:" OPTIONS; do 
+  case $OPTIONS in 
+  *) case $OPTARG in
+  u|username) getarg BITBUCKET_USER ;;
+  r|raw_output) RAW_JSON_OUTPUT=1 ;;
+esac; esac; done
+shift $((OPTIND - 1))
+
+read_rc_file
+
+[[ -z "$BITBUCKET_USER" ]] && { 
+  echo "user must be specified." >&2; exit 1; 
+}
+
+if [[ "$1" = "create" ]]; then #!#
+  shift
+  REPO_NAME="$1";shift
+  [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+  [[ -n "$@" ]] && DESCRIPTION="$@"
+  curl -i \
+    -X POST \
+    -u "${BITBUCKET_USER}:$(get_password)" \
+    -d "{\"name\":\"${REPO_NAME}\",\"is_private\":true,\"scm\":\"git\",\"fork_policy\":\"no_forks\",\"description\":\"${DESCRIPTION}\"}" \
+    "https://bitbucket.org/api/2.0/repositories/${BITBUCKET_USER}/${REPO_NAME}"
+
+elif [[ "$1" = "test" ]]; then #!#
+  shift
+  REPO_NAME="$1";shift
+  [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+
+  curl -i \
+    -X PUT \
+    -H "Content-Type: application/json; charset=utf-8" \
+    --data-binary '{"description":"foo bar"}' \
+    -u "${BITBUCKET_USER}:$(get_password)" \
+    "https://bitbucket.org/api/2.0/repositories/${BITBUCKET_USER}/${REPO_NAME}"
+
+
+elif [[ "$1" = "delete" ]]; then #!#
+  shift
+  REPO_NAME="$1"; shift
+  [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+
+  read -p "If you are sure to delete Repository: '${REPO_NAME}' please type in the name again: " ENTERED_REPO_NAME
+  [[ "$REPO_NAME" != "$ENTERED_REPO_NAME" ]] && {
+    echo "Entered Repository name: '${ENTERED_REPO_NAME}' does not match: '${REPO_NAME}'" >&2; exit 1;
+  }
+
+  curl -i \
+    -X DELETE \
+    -u "${BITBUCKET_USER}:$(get_password)" \
+    "https://bitbucket.org/api/2.0/repositories/${BITBUCKET_USER}/${REPO_NAME}"
+
+elif [[ "$1" = "clone" ]]; then #!#
+  shift
+  [[ -n "$1" ]] && { : ${REPO_NAME:="$1"}; shift; }
+  [[ -z "$REPO_NAME" ]] && { echo "no repository name specified."; exit 1; }
+  git clone git@bitbucket.org:${BITBUCKET_USER}/${REPO_NAME}.git
+
+elif [[ "$1" = "list" ]]; then #!#
+  shift
+
+  RESPONSE="$(curl -s \
+    -u "${BITBUCKET_USER}:$(get_password)" \
+    "https://bitbucket.org/api/2.0/repositories/${BITBUCKET_USER}?pagelen=100"\
+    )"
+
+  if [[ $RAW_JSON_OUTPUT -eq 1 ]];then
+    echo "$RESPONSE"
+  else
+    echo "$RESPONSE" \
+      | jq -r '.values|map(.name)[]'
+  fi
+
+fi
+

@@ -1,0 +1,124 @@
+#!/bin/bash
+set -ef -o pipefail
+source $(dirname $0)/bash_helpers/bash_helpers
+
+while getopts ":-:" OPTIONS; do 
+  case $OPTIONS in 
+  *) case $OPTARG in
+  u|username) getarg username ;;
+  n|namespace) getarg dockerhub_namespace ;;
+  p|private) dockerhub_private="true" ;;
+  s|short) short_output=1 ;;
+esac; esac; done
+shift $((OPTIND - 1))
+
+read_rc_file
+
+: ${cookie_dir:="~/baufismart_cookies"}
+: ${jwt_file:="${cookie_dir}/dockerhub_jwt"}
+: ${dockerhub_namespace:="${username}"}
+
+[[ -z "$username" ]] && { echo "username must be specified." >&2; exit 1; }
+
+if [[ "$1" = "login" ]]; then
+  shift
+  response="$( curl -s \
+    -X POST \
+    -H "Content-Type:application/json" \
+    --data-binary "{\"username\":\"${username}\",\"password\":\"$(get_password)\"}" \
+    "https://hub.docker.com/v2/users/login/" )"
+  jq -r '.token' <<<"$response" > $jwt_file
+
+elif [[ "$1" = "create" ]]; then
+  shift
+  dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
+  github_repo="$1";shift; [[ -z "$github_repo" ]] && { echo "parameter missing" >&2; exit 1; }
+  # user/repo
+  : ${dockerhub_private:="false"}
+json="$(cat <<EOF
+{
+  "name": "${dockerhub_repo_name}",
+  "namespace": "${dockerhub_namespace}",
+  "description": "${dockerhub_repo_name}",
+  "vcs_repo_name": "${github_repo}",
+  "provider": "github",
+  "dockerhub_repo_name": "${dockerhub_namespace}/${dockerhub_repo_name}",
+  "is_private": ${dockerhub_private},
+  "active": true,
+  "build_tags": [
+    {
+      "name": "latest",
+      "source_type": "Branch",
+      "source_name": "master",
+      "dockerfile_location": "/"
+    },
+    {
+      "name": "{sourceref}",
+      "source_type": "Tag",
+      "source_name": "/^[0-9.]*$/",
+      "dockerfile_location": "/"
+    }
+  ]
+}
+EOF
+)"
+  echo "$json" | jq -c . \
+  | curl -s \
+    -X POST \
+    -H "Content-Type:application/json" \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    -d @- \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/autobuild/"
+
+elif [[ "$1" = "delete" ]]; then
+  shift
+  dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
+  read -p "If you are sure to delete the Repository: '${dockerhub_repo_name}' please type in the name again: " ENTERED_REPO_NAME
+  [[ "$dockerhub_repo_name" != "$ENTERED_REPO_NAME" ]] && {
+    echo "Entered Repository name: '${ENTERED_REPO_NAME}' does not match: '${dockerhub_repo_name}'" >&2; exit 1;
+  }
+  curl -s \
+    -X DELETE \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/" \
+  && echo "deleted"
+
+elif [[ "$1" = "list" ]]; then
+  shift
+  response="$( curl -s \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/?pate=1&page_size=10000" )"
+  if [[ $short_output -eq 1 ]];then
+    echo "$response" | jq -r '.results[]|"\(.namespace)/\(.name) \(.user) \(if (.is_private) then "private" else "" end )"'
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "info" ]]; then
+  shift
+  dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
+  curl -s \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/"
+
+elif [[ "$1" = "test" ]]; then
+  shift
+  dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
+  curl -i \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    "https://hub.docker.com/v1/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/tags/"
+    # "https://hub.docker.com/v2/_catalog"
+    # "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/tags/list/"
+
+elif [[ "$1" = "build" ]]; then
+  shift
+  dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
+  curl -s \
+    -X POST \
+    -H "Content-Type:application/json" \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    --data-binary '{"source_name":"master","source_type":"Branch","dockerfile_location":"/"}' \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/autobuild/trigger-build/"
+
+fi
+
