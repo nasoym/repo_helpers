@@ -1,0 +1,3 @@
+[submodule "bin/bash_helpers"]
+	path = bin/bash_helpers
+	url = git@github.com:nasoym/bash_helpers.git
