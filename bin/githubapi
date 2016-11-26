@@ -28,6 +28,7 @@ read_rc_file
 
 [[ -z "$GITHUB_USER" ]] && { echo "github user must be specified." >&2; exit 1; }
 
+
 if [[ "$1" = "create" ]]; then
   shift
   REPO_NAME="$1";shift
@@ -44,6 +45,11 @@ if [[ "$1" = "create" ]]; then
     -u "${GITHUB_USER}:$(get_password)" \
 -d "{\"name\":\"${REPO_NAME}\",\"description\":\"${DESCRIPTION}\",\"auto_init\":true,\"has_issues\":false,\"has_wiki\":false,\"has_downloads\":false,\"private\":${private}}" \
 $url
+
+elif [[ "$1" = "clonecreate" ]]; then
+  shift
+  $0 create $@
+  $0 clone $@
 
 elif [[ "$1" = "delete" ]]; then #!#
   shift
