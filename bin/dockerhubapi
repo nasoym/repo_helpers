@@ -104,11 +104,18 @@ elif [[ "$1" = "info" ]]; then
 elif [[ "$1" = "test" ]]; then
   shift
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
-  curl -i \
+  curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
-    "https://hub.docker.com/v1/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/tags/"
-    # "https://hub.docker.com/v2/_catalog"
-    # "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/tags/list/"
+    -H "Accept: application/json" \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/tags/"
+
+    # "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/tags/"
+    # "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/buildhistory/?page_size=100"
+    # "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/autobuild/"
+
+    # "https://registry.docker.io/v2/"
+    # "https://index.docker.io/v1/repositories/${dockerhub_repo_name}"
+    # "https://hub.docker.com/v2/"
 
 elif [[ "$1" = "build" ]]; then
   shift
