@@ -14,7 +14,7 @@ shift $((OPTIND - 1))
 
 read_rc_file
 
-: ${cookie_dir:="~/baufismart_cookies"}
+: ${cookie_dir:="${HOME}/baufismart_cookies"}
 : ${jwt_file:="${cookie_dir}/dockerhub_jwt"}
 : ${dockerhub_namespace:="${username}"}
 
@@ -27,7 +27,7 @@ if [[ "$1" = "login" ]]; then
     -H "Content-Type:application/json" \
     --data-binary "{\"username\":\"${username}\",\"password\":\"$(get_password)\"}" \
     "https://hub.docker.com/v2/users/login/" )"
-  jq -r '.token' <<<"$response" > $jwt_file
+  jq -r '.token' <<<"$response" > ${jwt_file}
 
 elif [[ "$1" = "create" ]]; then
   shift
@@ -62,6 +62,7 @@ json="$(cat <<EOF
 }
 EOF
 )"
+
   echo "$json" | jq -c . \
   | curl -s \
     -X POST \
