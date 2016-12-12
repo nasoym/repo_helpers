@@ -88,8 +88,8 @@ elif [[ "$1" = "delete" ]]; then
 
 elif [[ "$1" = "list" ]]; then
   shift
+    # -H "Authorization:JWT $(cat ${jwt_file})" \
   response="$( curl -s \
-    -H "Authorization:JWT $(cat ${jwt_file})" \
     "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/?page=1&page_size=10000" )"
   if [[ $short_output -eq 1 ]];then
     echo "$response" | jq -r '.results[]|"\(.namespace)/\(.name) \(.user) \(if (.is_private) then "private" else "" end )"'
