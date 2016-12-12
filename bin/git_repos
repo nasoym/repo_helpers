@@ -4,6 +4,8 @@
 : ${EXCLUDE:=""}
 : ${INCLUDE:=""}
 
+FOLDER="$(realpath $FOLDER)"
+
 if [[ -n "$1" ]];then
   command="$1"
   shift
