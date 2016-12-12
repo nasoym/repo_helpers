@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-: ${FOLDERS:="$(pwd)"}
+: ${FOLDER:="$(pwd)"}
 : ${EXCLUDE:=""}
 
 command="$1"; shift
 : ${command:="list"}
 
-git_folders="$(find ${FOLDERS} -maxdepth 2 -type d -path "*/.git")"
+git_folders="$(find ${FOLDER} -maxdepth 2 -type d -path "*/.git")"
 
 function filter_folders_with_changes() {
   parallel "git --git-dir={} --work-tree={//} status -sb \
@@ -19,6 +19,7 @@ export -f filter_folders_with_changes
 case $command in 
   pull)
     echo "$git_folders" \
+      | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | parallel -u -j 400% "\
 echo pull \$(basename {//});\
 git --git-dir={} --work-tree={//} pull -q \
@@ -27,11 +28,13 @@ git --git-dir={} --work-tree={//} pull -q \
   filter)
     echo "$git_folders" \
       | parallel "git --git-dir={} --work-tree={//} config --get remote.origin.url" \
+      | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | grep "$@"
     ;;
   list)
-    git_folders_with_changes="$(echo "$git_folders" | filter_folders_with_changes)"
-    echo "$git_folders_with_changes" \
+    echo "$git_folders" \
+      | filter_folders_with_changes \
+      | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | parallel "\
 echo \$(basename {//}); \
 unbuffer git --git-dir={} --work-tree={//} status -sb \
@@ -39,8 +42,9 @@ unbuffer git --git-dir={} --work-tree={//} status -sb \
 "
     ;;
   push)
-    git_folders_with_changes="$(echo "$git_folders" | filter_folders_with_changes)"
-    echo "$git_folders_with_changes" \
+    echo "$git_folders" \
+      | filter_folders_with_changes \
+      | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | parallel "\
 echo push \$(basename {//});\
 git --git-dir={} --work-tree={//} add --all;\
