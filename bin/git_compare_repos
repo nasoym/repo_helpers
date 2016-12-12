@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -ef -o pipefail
+
+echo "====== github not installed"
+diff -y --suppress-common-lines <(githubapi -r list | jq -M -r 'map(.full_name)[]' | sort) <(git_repos filter github | sed -e 's/^.*:\(.*\)\.git$/\1/g' | sort) \
+| sed -e 's/\t* *<$//g' \
+| column || true
+
+echo "====== bitbucket not installed"
+diff -y --suppress-common-lines <(bitbucketapi -r list | jq -M -r '.values|map(.full_name)[]' | sort) <(git_repos filter bitbucket | sed -e 's/^.*:\(.*\)\.git$/\1/g' | sort) \
+| sed -e 's/\t* *<$//g' \
+| column || true
+
