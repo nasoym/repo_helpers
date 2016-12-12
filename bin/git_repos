@@ -2,6 +2,7 @@
 
 : ${FOLDER:="$(pwd)"}
 : ${EXCLUDE:=""}
+: ${INCLUDE:=""}
 
 command="$1"; shift
 : ${command:="list"}
@@ -20,6 +21,7 @@ case $command in
   pull)
     echo "$git_folders" \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
+      | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | parallel -u -j 400% "\
 echo pull \$(basename {//});\
 git --git-dir={} --work-tree={//} pull -q \
@@ -29,12 +31,14 @@ git --git-dir={} --work-tree={//} pull -q \
     echo "$git_folders" \
       | parallel "git --git-dir={} --work-tree={//} config --get remote.origin.url" \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
+      | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | grep "$@"
     ;;
   list)
     echo "$git_folders" \
       | filter_folders_with_changes \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
+      | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | parallel "\
 echo \$(basename {//}); \
 unbuffer git --git-dir={} --work-tree={//} status -sb \
@@ -42,13 +46,15 @@ unbuffer git --git-dir={} --work-tree={//} status -sb \
 "
     ;;
   push)
+    commit_message="${@:-"foo bar"}"
     echo "$git_folders" \
       | filter_folders_with_changes \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
+      | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | parallel "\
 echo push \$(basename {//});\
 git --git-dir={} --work-tree={//} add --all;\
-git --git-dir={} --work-tree={//} commit -m 'automatic commit' -q;\
+git --git-dir={} --work-tree={//} commit -m '${commit_message}' -q;\
 git --git-dir={} --work-tree={//} pull -q;\
 git --git-dir={} --work-tree={//} push -q;\
 "

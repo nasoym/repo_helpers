@@ -1,0 +1,23 @@
+#!/bin/bash
+
+COMMIT=$1
+: ${DAYS:="4"}
+
+AUTHOR=$(git show -s --pretty=format:"%ae" ${COMMIT})
+DATE=$(git show -s --pretty=format:"%ad" ${COMMIT})
+
+
+START_DATE=$(gdate -d "${DATE} -${DAYS} days" +%F)
+END_DATE=$(gdate -d "${DATE} +${DAYS} days" +%F)
+
+# echo "AUTHOR:${AUTHOR}"
+# echo "DATE:${DATE}"
+# echo "START_DATE:${START_DATE}"
+# echo "END_DATE:${END_DATE}"
+
+git log \
+  --pretty=format:"commit %h %ad %an: %s" \
+  --after="${START_DATE}" \
+  --before="${END_DATE}" \
+  --author="${AUTHOR}"
+

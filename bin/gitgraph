@@ -1,0 +1,45 @@
+#!/bin/bash
+
+function gitGraphShort() {
+  local LINES=$1
+  git --no-pager log -n${LINES} --all --graph --decorate --oneline --simplify-by-decoration
+}
+
+function gitGraphDetailed() {
+  local LINES=$1
+  # git --no-pager log -n${LINES} --all --graph --decorate --oneline --simplify-merges
+  git --no-pager log -n${LINES} \
+    --all \
+    --graph \
+    --decorate \
+    --simplify-merges \
+    --date=short \
+    --graph --pretty=format:"\
+%C(magenta)%h%Creset\
+ %C(dim green)(%cd)%Creset\
+ %C(cyan)[%an]%Creset\
+ %C(red)%d%Creset\
+ %s\
+" \
+    --abbrev-commit
+
+    # --oneline 
+    # | sed -e "s/^\(.\{$(tput cols)\}\).*$/\1/g"
+  # --pretty=format:"%h %cn %s"
+  echo
+
+}
+
+
+: ${LINES:=$(( $(tput lines) - 5 ))}
+
+if [ "$#" -ge 1 ]; then
+  if [ "$1" = "short" ]; then
+    gitGraphShort $LINES
+  else
+    gitGraphDetailed $1
+  fi
+else
+  gitGraphDetailed $LINES
+fi
+
