@@ -4,7 +4,10 @@
 : ${EXCLUDE:=""}
 : ${INCLUDE:=""}
 
-command="$1"; shift
+if [[ -n "$1" ]];then
+  command="$1"
+  shift
+fi
 : ${command:="list"}
 
 git_folders="$(find ${FOLDER} -maxdepth 2 -type d -path "*/.git")"
