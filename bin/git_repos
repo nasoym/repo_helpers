@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+: ${FOLDERS:="$(pwd)"}
+: ${EXCLUDE:=""}
+
+command="$1"; shift
+: ${command:="list"}
+
+git_folders="$(find ${FOLDERS} -maxdepth 2 -type d -path "*/.git")"
+
+function filter_folders_with_changes() {
+  parallel "git --git-dir={} --work-tree={//} status -sb \
+  | sed -e '/^## [^ ]*\$/d' \
+  | grep -v '^\$' >/dev/null && echo '{}' \
+  "
+}
+export -f filter_folders_with_changes
+
+case $command in 
+  pull)
+    echo "$git_folders" \
+      | parallel -u -j 400% "\
+echo pull \$(basename {//});\
+git --git-dir={} --work-tree={//} pull -q \
+"
+    ;;
+  filter)
+    echo "$git_folders" \
+      | parallel "git --git-dir={} --work-tree={//} config --get remote.origin.url" \
+      | grep "$@"
+    ;;
+  list)
+    git_folders_with_changes="$(echo "$git_folders" | filter_folders_with_changes)"
+    echo "$git_folders_with_changes" \
+      | parallel "\
+echo \$(basename {//}); \
+unbuffer git --git-dir={} --work-tree={//} status -sb \
+| sed -e 's/^/    /g' \
+"
+    ;;
+  push)
+    git_folders_with_changes="$(echo "$git_folders" | filter_folders_with_changes)"
+    echo "$git_folders_with_changes" \
+      | parallel "\
+echo push \$(basename {//});\
+git --git-dir={} --work-tree={//} add --all;\
+git --git-dir={} --work-tree={//} commit -m 'automatic commit' -q;\
+git --git-dir={} --work-tree={//} pull -q;\
+git --git-dir={} --work-tree={//} push -q;\
+"
+    ;;
+  *)
+    echo "command: $command unknown"
+    ;;
+esac
+
