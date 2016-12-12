@@ -35,14 +35,14 @@ git --git-dir={} --work-tree={//} pull -q \
       | parallel "git --git-dir={} --work-tree={//} config --get remote.origin.url" \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
-      | grep "$@"
+      | if [[ -n "$@" ]]; then grep -E "$@"; else cat; fi
     ;;
   list)
     echo "$git_folders" \
       | filter_folders_with_changes \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
-      | parallel "\
+      | parallel -j 200% "\
 echo \$(basename {//}); \
 unbuffer git --git-dir={} --work-tree={//} status -sb \
 | sed -e 's/^/    /g' \
