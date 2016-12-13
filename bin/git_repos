@@ -46,7 +46,7 @@ git --git-dir={} --work-tree={//} pull -q \
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | parallel -j 200% "\
 echo \$(basename {//}); \
-unbuffer git --git-dir={} --work-tree={//} status -sb \
+git --git-dir={} --work-tree={//} status -sb \
 | sed -e 's/^/    /g' \
 "
     ;;
