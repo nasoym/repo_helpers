@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -ef -o pipefail
+source $(dirname $0)/bash_helpers/bash_helpers
+
+while getopts ":-:" OPTIONS; do 
+  case $OPTIONS in 
+  *) case $OPTARG in
+  u|username) getarg BITBUCKET_USER ;;
+  r|raw_output) RAW_JSON_OUTPUT=1 ;;
+esac; esac; done
+shift $((OPTIND - 1))
+
+read_rc_file
+
+
+# curl -i -H "Authorization: Bearer $(pass show hypoport/quay.io/api_token)" \
+#   -X POST \
+#   -H "Content-type: application/json" \
+#   --data-binary '{"namespace":"nasoymorg","visibility":"public","repository":"foo","description":"foo"}' \
+#   "https://quay.io/api/v1/repository"
+
+# curl -s -H "Authorization: Bearer $(pass show hypoport/quay.io/api_token)" \
+#   -X GET \
+#   "https://quay.io/api/v1/repository/nasoymorg/foo/build/" \
+#   | jq -M .
+
+# curl -s -H "Authorization: Bearer $(pass show hypoport/quay.io/api_token)" \
+#   -X GET \
+#   "https://quay.io/api/v1/repository/nasoymorg/foo/trigger/" \
+#   | jq -M . 
+
+    #   "service": "github",
+    #   "can_invoke": true,
+    #   "config": {
+    #     "build_source": "nasoym/testtest",
+    #     "deploy_key_id": 20725633,
+    #     "subdir": "",
+    #     "hook_id": 11216869,
+    #     "credentials": [
+    #       {
+    #         "name": "SSH Public Key",
+    #         "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFjtztKkqpmo5joDrko/UGlV5l1KEiAHJhiRf1yVh3vo31/8r8X5WdY0/ENIKrsprjzP90VbYJpjQwlZ7HiRdtz3WQFQu6x+LJ8ucj3zrOybvAmRemw9hjI/q6qz2ZNBfqvgMkddT1DZIaLMh8x8nHtdFphMDc2r1btLtOmXl9jkWEPJPm0MkEbxIW44rfaTNAbSqW+mNHVrJtmoeg+YPo9tCoOo/8C+ZgEt4q4YlZYY+aaYbkrN/HFQm3e7HtT92oRR0zkZbabM8EOIMgfd4ciIs2tVhZsYld9qZ8s5C1iTyQeJGxr6I5zLjd8R5J4E7h+FRl2OhSxNQxrYD5p2oH"
+    #       }
+    #     ],
+    #     "master_branch": "master"
+    #   },
+    #   "is_active": true,
+    #   "repository_url": "https://github.com/nasoym/testtest",
+    #   "build_source": "nasoym/testtest",
+    #   "id": "77d1f3c8-4b90-4bbc-9657-707cc44a3786"
+    # }
+ 
+
+# {"config":{"build_source":"nasoym/testtest","subdir":"","credentials":[],"master_branch":"master"}}
+
+uuid="$(cat /proc/sys/kernel/random/uuid)"
+echo ">${uuid}<"
+curl -i -H "Authorization: Bearer $(pass show hypoport/quay.io/api_token)" \
+  -X POST \
+  -H "Content-type: application/json" \
+  --data-binary '{"pull_robot":"string","config":{"build_source":"nasoym/testtest","subdir":"","credentials":[],"master_branch":"master"}}' \
+  "https://quay.io/api/v1/repository/nasoymorg/foo/trigger/${uuid}/activate"
+
+
+
+# uuid="$(cat /proc/sys/kernel/random/uuid)"
+# echo ">${uuid}<"
+# curl -i -H "Authorization: Bearer $(pass show hypoport/quay.io/api_token)" \
+#   -X POST \
+#   -H "Content-type: application/json" \
+#   --data-binary '{"pull_robot":"string","config":{}}' \
+#   "https://quay.io/api/v1/repository/nasoymorg/foo/trigger/${uuid}/activate"
+#
+#
+#
+#
+#
