@@ -5,13 +5,14 @@ source $(dirname $0)/bash_helpers/bash_helpers
 while getopts ":-:" OPTIONS; do 
   case $OPTIONS in 
   *) case $OPTARG in
-  u|username) getarg BITBUCKET_USER ;;
+  # u|username) getarg BITBUCKET_USER ;;
   r|raw_output) RAW_JSON_OUTPUT=1 ;;
 esac; esac; done
 shift $((OPTIND - 1))
 
 read_rc_file
 
+echo "$NAMESPACE"
 
 # curl -i -H "Authorization: Bearer $(pass show hypoport/quay.io/api_token)" \
 #   -X POST \
@@ -53,13 +54,13 @@ read_rc_file
 
 # {"config":{"build_source":"nasoym/testtest","subdir":"","credentials":[],"master_branch":"master"}}
 
-uuid="$(cat /proc/sys/kernel/random/uuid)"
-echo ">${uuid}<"
-curl -i -H "Authorization: Bearer $(pass show hypoport/quay.io/api_token)" \
-  -X POST \
-  -H "Content-type: application/json" \
-  --data-binary '{"pull_robot":"string","config":{"build_source":"nasoym/testtest","subdir":"","credentials":[],"master_branch":"master"}}' \
-  "https://quay.io/api/v1/repository/nasoymorg/foo/trigger/${uuid}/activate"
+# uuid="$(cat /proc/sys/kernel/random/uuid)"
+# echo ">${uuid}<"
+# curl -i -H "Authorization: Bearer $(pass show hypoport/quay.io/api_token)" \
+#   -X POST \
+#   -H "Content-type: application/json" \
+#   --data-binary '{"pull_robot":"string","config":{"build_source":"nasoym/testtest","subdir":"","credentials":[],"master_branch":"master"}}' \
+#   "https://quay.io/api/v1/repository/nasoymorg/foo/trigger/${uuid}/activate"
 
 
 
