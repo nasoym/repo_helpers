@@ -104,6 +104,13 @@ elif [[ "$1" = "info" ]]; then
     -H "Authorization:JWT $(cat ${jwt_file})" \
     "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/"
 
+elif [[ "$1" = "catalog" ]]; then
+  shift
+  curl -i \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    -H "Accept: application/json" \
+    "https://hub.docker.com/v2/_catalog/"
+
 elif [[ "$1" = "test" ]]; then
   shift
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
@@ -124,11 +131,51 @@ elif [[ "$1" = "build" ]]; then
   shift
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
     -X POST \
     -H "Content-Type:application/json" \
-    -H "Authorization:JWT $(cat ${jwt_file})" \
     --data-binary '{"source_name":"master","source_type":"Branch","dockerfile_location":"/"}' \
     "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/autobuild/trigger-build/"
+
+elif [[ "$1" = "listgroups" ]]; then
+  shift
+  curl -s \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    "https://hub.docker.com/v2/orgs/${dockerhub_namespace}/groups/"
+
+elif [[ "$1" = "repogroups" ]]; then
+  shift
+  dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
+  curl -s \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    -H "Accept: application/json" \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/groups/"
+
+elif [[ "$1" = "addgroup" ]]; then
+  shift
+  dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
+  group="$1";shift; [[ -z "$group" ]] && { echo "parameter missing" >&2; exit 1; }
+
+  if [[ ! "$group" =~ ^[0-9]*$ ]]; then
+    group_id="$(curl -s \
+      -H "Authorization:JWT $(cat ${jwt_file})" \
+      "https://hub.docker.com/v2/orgs/${dockerhub_namespace}/groups/?page_size=100" \
+      | jq -M -r ".results[]|select(.name==\"${group}\")|.id?")"
+  else
+    group_id=$group
+  fi
+
+  if [[ -z "$group_id" ]];then
+    echo "no group_id provided"
+    exit 1
+  fi
+  
+  curl -s \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    -X POST \
+    -H "Content-Type:application/json" \
+    --data-binary "{\"group_id\":${group_id},\"permission\":\"read\"}" \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/groups/"
 
 fi
 
