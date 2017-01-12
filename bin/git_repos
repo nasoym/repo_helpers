@@ -29,7 +29,7 @@ case $command in
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | parallel -u -j 400% "\
 echo pull \$(basename {//});\
-git --git-dir={} --work-tree={//} pull -q \
+git --git-dir={} --work-tree={//} pull \
 "
     ;;
   filter)
