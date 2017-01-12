@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -ef -o pipefail
+
+  ORGA_NAME="$1";shift
+  [[ -z "$ORGA_NAME" ]] && { echo "orga name must be specified." >&2; exit 1; }
+  REPO_NAME="$1";shift
+  [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+
+  githubapi -o $ORGA_NAME create $REPO_NAME
+  dockerhubapi -n $ORGA_NAME -p create $REPO_NAME $ORGA_NAME/$REPO_NAME
+  githubapi -o $ORGA_NAME clone $REPO_NAME
+
+  touch $REPO_NAME/Dockerfile
+
