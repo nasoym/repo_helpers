@@ -3,6 +3,6 @@ set -ef -o pipefail
 
 source $(dirname $0)/bash_helpers/bash_helpers
 
-watch 'dockerhubapi history $(basename $(pwd)) | jq -M .results[0]'
+watch 'dockerhubapi history $(basename $(pwd)) | jq -M .results[0:3]'
 
 
