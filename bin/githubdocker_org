@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-set -ef -o pipefail
+# set -ef -o pipefail
 
 while getopts "p" options; do case $options in
   p) public=1 ;; 
   * ) exit 1 ;;
 esac; done; shift $(( OPTIND - 1 ));
+: ${public:=0}
 
 ORGA_NAME="$1";shift
 [[ -z "$ORGA_NAME" ]] && { echo "orga name must be specified." >&2; exit 1; }
