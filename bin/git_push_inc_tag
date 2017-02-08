@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+git tag $(git tag \
+  | sort -t. -k1,1n -k2,2n -k3,3n \
+  | sed -n '$p' \
+  | awk -F'.' '{print $1 "." $2 "." $3+1}')
+
+git push origin master --tags
+
