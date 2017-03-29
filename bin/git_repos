@@ -27,12 +27,14 @@ case $command in
     echo "$git_folders" \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
-      | parallel -u -j 400% "\
-echo pull \$(basename {//});\
-( cd {//}; git pull --rebase ) \
+      | parallel -k -j 400% "\
+echo \$(basename {//}); \
+if [ -x \"{//}/.local_git_update\" ];then \
+  {//}/.local_git_update pull; \
+else
+  git --git-dir={} --work-tree={//} pull -q; \
+fi\
 "
-# ( cd {//}; git stash save --quiet; git pull --rebase; git stash list | grep stash >/dev/null && git stash pop --quiet >/dev/null) \
-
     ;;
   filter)
     echo "$git_folders" \
