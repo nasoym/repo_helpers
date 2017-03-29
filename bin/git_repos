@@ -62,10 +62,14 @@ git --git-dir={} --work-tree={//} status -sb \
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | parallel "\
 echo push \$(basename {//});\
-git --git-dir={} --work-tree={//} add --all;\
-git --git-dir={} --work-tree={//} commit -m '${commit_message}' -q;\
-git --git-dir={} --work-tree={//} pull --rebase -q;\
-git --git-dir={} --work-tree={//} push -q;\
+if [ -x \"{//}/.local_git_update\" ];then \
+  {//}/.local_git_update push; \
+else
+  git --git-dir={} --work-tree={//} add --all;\
+  git --git-dir={} --work-tree={//} commit -m '${commit_message}' -q;\
+  git --git-dir={} --work-tree={//} pull --rebase -q;\
+  git --git-dir={} --work-tree={//} push -q;\
+fi\
 "
     ;;
   *)
