@@ -29,8 +29,10 @@ case $command in
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | parallel -u -j 400% "\
 echo pull \$(basename {//});\
-( cd {//}; git stash save --quiet; git pull --rebase; git stash list | grep stash >/dev/null && git stash pop --quiet >/dev/null) \
+( cd {//}; git pull --rebase ) \
 "
+# ( cd {//}; git stash save --quiet; git pull --rebase; git stash list | grep stash >/dev/null && git stash pop --quiet >/dev/null) \
+
     ;;
   filter)
     echo "$git_folders" \
