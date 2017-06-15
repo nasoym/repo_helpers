@@ -28,17 +28,22 @@ case $command in
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | parallel -k -j 400% "\
-echo \$(basename {//}); \
 if [ -x \"{//}/.local_git_update\" ];then \
+  echo \$(basename {//}); \
   {//}/.local_git_update pull; \
 else
-  git --git-dir={} --work-tree={//} pull -q; \
+  pull_result=\"\$(git --git-dir={} --work-tree={//} pull -q 2>&1 )\"; \
+  if [[ -n \"\$pull_result\" ]];then
+    echo \$(basename {//}); \
+    echo \$pull_result ; \
+  fi
 fi\
 "
     ;;
   filter)
     echo "$git_folders" \
       | parallel "git --git-dir={} --work-tree={//} config --get remote.origin.url" \
+      | sort \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
       | if [[ -n "$@" ]]; then grep -E "$@"; else cat; fi
