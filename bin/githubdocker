@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
 set -ef -o pipefail
 
-  REPO_NAME="$1";shift
-  [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+if [[ "$1" == "create" ]];then
+  echo "no need to provide a command" >&2
+  exit 1
+elif [[ "$#" -gt 1 ]];then
+  echo "only one argument is needed for the repository name" >&2
+  exit 1
+fi
 
-  githubapi createclone $REPO_NAME
-  dockerhubapi create $REPO_NAME nasoym/$REPO_NAME
-  githubapi add_docker_service $REPO_NAME
+REPO_NAME="$1";shift
+[[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+
+githubapi createclone $REPO_NAME
+dockerhubapi create $REPO_NAME nasoym/$REPO_NAME
+githubapi add_docker_service $REPO_NAME
 
