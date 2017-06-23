@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -ef -o pipefail
 
-source $(dirname $0)/bash_helpers/bash_helpers
-
-watch 'dockerhubapi history $(basename $(pwd)) | jq -M .results[0:3]'
-
-
+: ${project_name:="$(basename $(pwd))"}
+: ${count:=3}
+watch "dockerhubapi history ${project_name} \
+  | jq -M '.results[0:${count}]|map({status,dockertag_name,created_date,last_updated})'\
+  "
