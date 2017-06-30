@@ -44,6 +44,7 @@ elif [[ "$1" = "list" ]]; then shift
 
 elif [[ "$1" = "info" ]]; then shift
   repo="$1"
+  repo="$(sed '/.*\/.*/!s/^/library\//g' <<<"$repo")"
   response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/" )"
   if [[ $long_output -ne 1 ]];then
     jq -r '.|"\(.namespace)/\(.name)\n\(.description)\n\n\(.full_description)"' \
@@ -54,6 +55,7 @@ elif [[ "$1" = "info" ]]; then shift
 
 elif [[ "$1" = "dockerfile" ]]; then shift
   repo="$1"
+  repo="$(sed '/.*\/.*/!s/^/library\//g' <<<"$repo")"
   response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/dockerfile/" )"
   if [[ $long_output -ne 1 ]];then
     jq -r '.contents?' \
@@ -64,6 +66,7 @@ elif [[ "$1" = "dockerfile" ]]; then shift
 
 elif [[ "$1" = "tags" ]]; then shift
   repo="$1"
+  repo="$(sed '/.*\/.*/!s/^/library\//g' <<<"$repo")"
   response="$(curl -s \
     "${dockerhub_api_url}/repositories/${repo}/tags/?page=${page}&page_size=${page_size}"
   )"
@@ -75,6 +78,7 @@ elif [[ "$1" = "tags" ]]; then shift
 
 elif [[ "$1" = "history" ]]; then shift
   repo="$1"
+  repo="$(sed '/.*\/.*/!s/^/library\//g' <<<"$repo")"
   response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/buildhistory/?page=${page}&page_size=${page_size}")"
   if [[ $long_output -ne 1 ]];then
     jq -c '.results?[]?' <<<"$response"
@@ -84,6 +88,7 @@ elif [[ "$1" = "history" ]]; then shift
 
 elif [[ "$1" = "autobuild" ]]; then shift
   repo="$1"
+  repo="$(sed '/.*\/.*/!s/^/library\//g' <<<"$repo")"
   response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/autobuild/?page=${page}&page_size=${page_size}")"
   if [[ $long_output -ne 1 ]];then
     jq -c '.' <<<"$response"
@@ -93,6 +98,7 @@ elif [[ "$1" = "autobuild" ]]; then shift
 
 elif [[ "$1" = "build" ]]; then shift
   repo="$1"
+  repo="$(sed '/.*\/.*/!s/^/library\//g' <<<"$repo")"
   build_id="$2"
   response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/buildhistory/${build_id}/")"
   if [[ $long_output -ne 1 ]];then
