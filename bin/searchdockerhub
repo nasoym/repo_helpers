@@ -1,0 +1,111 @@
+#!/bin/bash
+set -euf -o pipefail
+
+while getopts "h?lp:s:" options; do case $options in
+  s) page_size="$OPTARG" ;;
+  p) page="$OPTARG" ;;
+  l) long_output="1" ;;
+  h|?) help; exit ;;
+esac; done; shift $((OPTIND - 1))
+
+: ${long_output:="0"}
+: ${page:="1"}
+# : ${page_size:="10000"}
+: ${page_size:="30"}
+: ${dockerhub_api_url:="https://hub.docker.com/v2"}
+
+if [[ "$#" -eq 0 ]]; then
+  :
+
+elif [[ "$1" = "search" ]]; then shift
+  query="$@"
+  response="$(curl -s "${dockerhub_api_url}/search/repositories/?page=${page}&page_size=${page_size}\
+&query=${query}"
+  )"
+  if [[ $long_output -ne 1 ]];then
+    jq -c -r ".results|sort_by(.pull_count)|map(\
+\"\(.star_count) \(.pull_count) \(.is_official) \(.repo_name): \(.short_description|@html)\"\
+      )[]" <<<"$response"
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "list" ]]; then shift
+  namespace="$1"
+  response="$(curl -s "${dockerhub_api_url}/repositories/${namespace}/\
+?page=${page}&page_size=${page_size}"
+  )"
+  if [[ $long_output -ne 1 ]];then
+    jq -r '.results[]|"\(.namespace)/\(.name) \(.user) \(if (.is_private) then "private" else "" end )"' \
+      <<<"$response"
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "info" ]]; then shift
+  repo="$1"
+  response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/" )"
+  if [[ $long_output -ne 1 ]];then
+    jq -r '.|"\(.namespace)/\(.name)\n\(.description)\n\n\(.full_description)"' \
+      <<<"$response"
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "dockerfile" ]]; then shift
+  repo="$1"
+  response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/dockerfile/" )"
+  if [[ $long_output -ne 1 ]];then
+    jq -r '.contents?' \
+      <<<"$response"
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "tags" ]]; then shift
+  repo="$1"
+  response="$(curl -s \
+    "${dockerhub_api_url}/repositories/${repo}/tags/?page=${page}&page_size=${page_size}"
+  )"
+  if [[ $long_output -ne 1 ]];then
+    jq -r '.results|sort_by(.last_updated)|map(.name)[]' <<<"$response"
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "history" ]]; then shift
+  repo="$1"
+  response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/buildhistory/?page=${page}&page_size=${page_size}")"
+  if [[ $long_output -ne 1 ]];then
+    jq -c '.results?[]?' <<<"$response"
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "autobuild" ]]; then shift
+  repo="$1"
+  response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/autobuild/?page=${page}&page_size=${page_size}")"
+  if [[ $long_output -ne 1 ]];then
+    jq -c '.' <<<"$response"
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "build" ]]; then shift
+  repo="$1"
+  build_id="$2"
+  response="$(curl -s "${dockerhub_api_url}/repositories/${repo}/buildhistory/${build_id}/")"
+  if [[ $long_output -ne 1 ]];then
+    jq -r '.build_results.logs' <<<"$response"
+  else
+    echo "$response"
+  fi
+
+elif [[ "$1" = "test" ]]; then shift
+  :
+
+else
+  $0 search $@
+
+fi
+
