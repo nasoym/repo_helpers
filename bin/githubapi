@@ -30,6 +30,7 @@ read_rc_file
 : ${GITHUB_ORGANISATION:=""}
 : ${DESCRIPTION:=""}
 : ${PASSWORD:=""}
+: ${RAW_JSON_OUTPUT:=0}
 
 [[ -z "$GITHUB_USER" ]] && { echo "github user must be specified." >&2; exit 1; }
 
@@ -99,6 +100,36 @@ elif [[ "$1" = "clone" ]]; then #!#
   [[ -n "$1" ]] && { : ${REPO_NAME:="$1"}; shift; }
   [[ -z "$REPO_NAME" ]] && { echo "no repository name specified."; exit 1; }
   git clone git@github.com:${github_namespace}/${REPO_NAME}.git
+
+elif [[ "$1" = "rename" ]]; then #!#
+  shift
+  REPO_NAME="$1"; shift
+  NEW_REPO_NAME="$1"; shift
+  [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+  [[ -z "$NEW_REPO_NAME" ]] && { echo "new repository name must be specified." >&2; exit 1; }
+  curl \
+    -s \
+    -u "$GITHUB_USER:$(get_password)" \
+    -X PATCH \
+    -H "Content-Type:application/json" \
+    -d "{\"name\":\"$NEW_REPO_NAME\"}" \
+    "https://api.github.com/repos/${github_namespace}/${REPO_NAME}"
+
+  if [[ -d "$NEW_REPO_NAME" ]];then
+    echo "folder with new name does already exists" >&2
+    exit 1
+  fi
+  if [[ -d "$REPO_NAME" ]];then
+    :
+    cd $REPO_NAME
+    git remote set-url origin "$( git remote -v \
+      | sed -n '1p' \
+      | awk '{print $2}' \
+      | sed -e "s/\\b${REPO_NAME}\\b/${NEW_REPO_NAME}/g" 
+    )"
+    cd ..
+    mv $REPO_NAME $NEW_REPO_NAME
+  fi
 
 elif [[ "$1" = "info" ]]; then #!#
   shift
