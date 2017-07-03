@@ -3,10 +3,23 @@
 set -eufo pipefail
 trap 'echo "$0: line ${LINENO}: exiting because of error";exit 1' ERR
 
-while getopts "h?p:s:r" options; do case $options in
+function urlencode() {
+  echo -n "$@" \
+  | tr ' ' '+' \
+  | while IFS= read -n 1 C; do 
+    case $C in
+        [a-zA-Z0-9.~_-+]) printf "$C" ;;
+        *) printf '%%%02X' "'$C" ;; 
+    esac
+  done
+  printf '\n'
+}
+
+while getopts "h?p:s:rq" options; do case $options in
   p) page="$OPTARG" ;;
   s) page_size="$OPTARG" ;;
   r) raw_output="1" ;;
+  q) show_query="1" ;;
   h|?) help; exit ;;
 esac; done; shift $((OPTIND - 1))
 
@@ -25,8 +38,9 @@ fi
 # : ${users_orgs:="orgs"}
 : ${users_orgs:="users"}
 : ${raw_output:="0"}
-: ${page_size:="100"}
+: ${page_size:="100"} # max is 100
 : ${page:="1"}
+: ${show_query:="0"}
 
 if [[ "$#" -eq 0 ]];then
   :
@@ -51,10 +65,51 @@ type=all\
   fi
 
 elif [[ "$1" = "search" ]]; then shift
-  # https://developer.github.com/v3/search/#search-code
-  search_query="$@"
+
+  # Only the default branch is considered. In most cases, this will be the master branch.
+  # Only files smaller than 384 KB are searchable.
+
+  # q : queyr
+  # sort : indexed , use this instead of Default: results are sorted by best match.
+  # order : [asc|desc] , if sort order provided sort by ..
+
+  # query examples
+
+  # foo+in:file,path+language:js
+  # foo+in:file+language:js
+  # foo+in:path+language:js
+  # foo+repo:jquery/jquery
   # alpine+user:hypoport
   # socat+in:file+filename:Dockerfile
+  # haproxy+size:100
+  # haproxy+size:>100
+  # user:mozilla+language:markdown
+  # forked:true  ## also include forked repos in result
+  # foo+path:app/public
+  # foo+path:cgi-bin+language:perl
+  # foo+filename:.vimrc
+  # foo+extension:sh
+  # foo+path:cgi-bin+extension:pm
+
+
+  # in Qualifies which fields are searched. With this qualifier you can restrict the search to the file contents
+  # (file), the file path (path), or both.
+  # language Searches code based on the language it's written in.
+  # fork Specifies that code from forked repositories should be searched (true). Repository forks will not be
+  # searchable unless the fork has more stars than the parent repository.
+  # size Finds files that match a certain size (in bytes).
+  # path Specifies the path prefix that the resulting file must be under.
+  # filename Matches files by a substring of the filename.
+  # extension Matches files with a certain extension after a dot.
+  # user or repo Limits searches to a specific user or repository.
+
+  # https://developer.github.com/v3/search/#search-code
+
+  search_query="$(urlencode "$@")"
+  if [[ "$show_query" -eq 1 ]];then
+    echo "query: >$search_query<"
+    exit 0
+  fi
   response="$(curl \
     -s \
     -u "${github_user}:${github_user_password}" \
@@ -72,10 +127,13 @@ elif [[ "$1" = "search" ]]; then shift
 total_count:\$count,\
 name,\
 path,\
+score,\
 repository:(.repository|{full_name,description}),\
-text_matches:(.text_matches|map({object_type,property,fragment,matches}))\
-})"
+text_matches:(.text_matches|map(.fragment))\
+})|reverse"
   fi
+# text_matches:(.text_matches|map({fragment}))\
+# text_matches:(.text_matches|map({object_type,property,fragment,matches}))\
 
 elif [[ "$1" = "info" ]]; then shift
   repo_name="$1"
