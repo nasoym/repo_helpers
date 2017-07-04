@@ -135,8 +135,6 @@ total_count:\$count,\
 repository:(.repository.full_name),\
 description:(.repository.description),\
 content:(.repository.full_name+\"/contents/\"+.path),\
-name,\
-path,\
 score,\
 text_matches:(.text_matches|map({property,fragment}))\
 })|reverse"
