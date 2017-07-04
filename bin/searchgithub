@@ -25,8 +25,8 @@ esac; done; shift $((OPTIND - 1))
 
 : ${rc_file:="${HOME}/.searchgithub_rc"}
 if [[ -r "${rc_file}" ]]; then
-  if ( cd $( dirname $(realpath "$rc_file")); git diff-index --quiet HEAD -- ) && \
-     ( cd $( dirname $(realpath "$rc_file")); git ls-files $(realpath "$rc_file") --error-unmatch ); then
+  if ( cd $( dirname $(realpath "$rc_file")); git diff-index --quiet HEAD -- &>/dev/null) && \
+     ( cd $( dirname $(realpath "$rc_file")); git ls-files $(realpath "$rc_file") --error-unmatch &>/dev/null); then
     source "${rc_file}"
   else
     echo "the rc file was either not in git or uncommitted changes found" >&2
