@@ -38,7 +38,7 @@ fi
 # : ${users_orgs:="orgs"}
 : ${users_orgs:="users"}
 : ${raw_output:="0"}
-: ${page_size:="100"} # max is 100
+: ${page_size:="5"} # max is 100
 : ${page:="1"}
 : ${show_query:="0"}
 
@@ -97,6 +97,7 @@ elif [[ "$1" = "search" ]]; then shift
   # foo+extension:sh
   # foo+path:cgi-bin+extension:pm
   # extension:sh+user:nasoym
+  # filename:.vimrc
 
 
   # in Qualifies which fields are searched. With this qualifier you can restrict the search to the file contents
