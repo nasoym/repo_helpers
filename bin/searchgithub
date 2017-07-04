@@ -142,10 +142,37 @@ text_matches:(.text_matches|map({property,fragment}))\
 
 elif [[ "$1" = "info" ]]; then shift
   repo_name="$1"
-  curl \
+  response="$(curl \
     -s \
     -u "${github_user}:${github_user_password}" \
     "https://api.github.com/repos/${repo_name}"
+  )"
+  if [[ "$raw_output" -eq 1 ]];then
+    echo "$response"
+  else
+    jq  "
+[.]|map({\
+full_name\
+,fork \
+,created_at \
+,updated_at \
+,pushed_at \
+,git_url \
+,ssh_url \
+,clone_url \
+,homepage \
+,size \
+,stargazers_count \
+,watchers_count \
+,language \
+,forks_count \
+,forks \
+,watchers \
+,network_count \
+,subscribers_count \
+})[]\
+" <<<"$response"
+  fi
 
 elif [[ "$1" = "content" ]]; then shift
   content_url="$1" ; shift
