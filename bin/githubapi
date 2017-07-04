@@ -10,6 +10,7 @@ while getopts ":-:" OPTIONS; do
   u|username) getarg GITHUB_USER ;;
   private) private="true" ;;
   public) private="false" ;;
+  l|local) local_rename="1" ;;
   o|orgname) 
     getarg GITHUB_ORGANISATION 
     : ${private:="true"}
@@ -31,6 +32,7 @@ read_rc_file
 : ${DESCRIPTION:=""}
 : ${PASSWORD:=""}
 : ${RAW_JSON_OUTPUT:=0}
+: ${local_rename:=0}
 
 [[ -z "$GITHUB_USER" ]] && { echo "github user must be specified." >&2; exit 1; }
 
@@ -107,13 +109,15 @@ elif [[ "$1" = "rename" ]]; then #!#
   NEW_REPO_NAME="$1"; shift
   [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
   [[ -z "$NEW_REPO_NAME" ]] && { echo "new repository name must be specified." >&2; exit 1; }
-  curl \
-    -s \
-    -u "$GITHUB_USER:$(get_password)" \
-    -X PATCH \
-    -H "Content-Type:application/json" \
-    -d "{\"name\":\"$NEW_REPO_NAME\"}" \
-    "https://api.github.com/repos/${github_namespace}/${REPO_NAME}"
+  if [[ "$local_rename" -ne 1 ]];then
+    curl \
+      -s \
+      -u "$GITHUB_USER:$(get_password)" \
+      -X PATCH \
+      -H "Content-Type:application/json" \
+      -d "{\"name\":\"$NEW_REPO_NAME\"}" \
+      "https://api.github.com/repos/${github_namespace}/${REPO_NAME}"
+  fi
 
   if [[ -d "$NEW_REPO_NAME" ]];then
     echo "folder with new name does already exists" >&2
