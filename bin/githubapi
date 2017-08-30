@@ -42,8 +42,10 @@ if [[ "$1" = "create" ]]; then
   [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
   [[ -n "$@" ]] && DESCRIPTION="$@"
 
+  team_setting=""
   if [[ -n $GITHUB_ORGANISATION ]];then
     url="https://api.github.com/orgs/${GITHUB_ORGANISATION}/repos"
+    team_setting=",\"team_id\":\"${team_id}\""
   else
     url="https://api.github.com/user/repos"
   fi
@@ -58,6 +60,7 @@ if [[ "$1" = "create" ]]; then
 ,\"has_wiki\":false\
 ,\"has_downloads\":false\
 ,\"private\":${private}\
+${team_setting}\
 }" \
     $url
 
@@ -142,6 +145,12 @@ elif [[ "$1" = "info" ]]; then #!#
   curl -s \
     -u "$GITHUB_USER:$(get_password)" \
 "https://api.github.com/repos/${github_namespace}/${REPO_NAME}"
+
+elif [[ "$1" = "teams" ]]; then #!#
+  shift
+  curl -s \
+    -u "$GITHUB_USER:$(get_password)" \
+"https://api.github.com/orgs/${github_namespace}/teams"
 
 elif [[ "$1" = "team" ]]; then #!#
   shift
