@@ -15,11 +15,12 @@ function urlencode_local() {
   printf '\n'
 }
 
-while getopts "h?p:s:rq" options; do case $options in
+while getopts "h?p:s:rqf" options; do case $options in
   p) page="$OPTARG" ;;
   s) page_size="$OPTARG" ;;
   r) raw_output="1" ;;
   q) show_query="1" ;;
+  f) formatted_output="1" ;;
   h|?) help; exit ;;
 esac; done; shift $((OPTIND - 1))
 
@@ -37,6 +38,7 @@ fi
 : ${github_namespace:="$github_user"}
 # : ${users_orgs:="orgs"}
 : ${users_orgs:="users"}
+: ${formatted_output:="0"}
 : ${raw_output:="0"}
 : ${page_size:="5"} # max is 100
 : ${page:="1"}
@@ -129,10 +131,20 @@ elif [[ "$1" = "search" ]]; then shift
   )"
   if [[ "$raw_output" -eq 1 ]];then
     echo "$response"
+  elif [[ "$formatted_output" -eq 1 ]];then
+    echo "$response" \
+    | jq -r \
+      "\
+.items\
+|map(\"------\(.repository.full_name)/\(.path)\\n      \(.url)\\n\(.text_matches|map(.fragment)|join(\"\\n=====\\n\"))\")\
+|.[]\
+      "
+
   else
     echo "$response" \
       | jq  ".total_count as \$count | .items|map({\
 total_count:\$count,\
+url:(.url),\
 repository:(.repository.full_name),\
 description:(.repository.description),\
 content:(.repository.full_name+\"/contents/\"+.path),\
@@ -226,5 +238,13 @@ elif [[ "$1" = "content" ]]; then shift
     -H 'Accept: application/vnd.github.v3.raw' \
     -u "${github_user}:${github_user_password}" \
     "https://api.github.com/repos/${content_url}"
+
+elif [[ "$1" = "apicontent" ]]; then shift
+  content_url="$1" ; shift
+  curl \
+    -s \
+    -H 'Accept: application/vnd.github.v3.raw' \
+    -u "${github_user}:${github_user_password}" \
+    "${content_url}"
 
 fi
