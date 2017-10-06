@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # set -ef -o pipefail
+set -ef -o pipefail
+set -o nounset
 
 while getopts "p" options; do case $options in
   p) public=1 ;; 
@@ -8,9 +10,7 @@ esac; done; shift $(( OPTIND - 1 ));
 : ${public:=0}
 
 ORGA_NAME="$1";shift
-[[ -z "$ORGA_NAME" ]] && { echo "orga name must be specified." >&2; exit 1; }
 REPO_NAME="$1";shift
-[[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
 
 if [[ "$public" -eq 1 ]];then
   githubapi -o $ORGA_NAME --public create $REPO_NAME
@@ -19,8 +19,6 @@ if [[ "$public" -eq 1 ]];then
 
 else
   GROUP_NAME="$1";shift
-  [[ -z "$GROUP_NAME" ]] && { echo "group name must be specified." >&2; exit 1; }
-
   githubapi -o $ORGA_NAME create $REPO_NAME
   dockerhubapi -n $ORGA_NAME -p create $REPO_NAME $ORGA_NAME/$REPO_NAME
   dockerhubapi -n $ORGA_NAME -p addgroup $REPO_NAME $GROUP_NAME
