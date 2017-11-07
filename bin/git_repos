@@ -60,7 +60,7 @@ git --git-dir={} --work-tree={//} status -sb \
 "
     ;;
   push)
-    commit_message="${@:-"foo bar"}"
+    commit_message="${@:-"commit"}"
     echo "$git_folders" \
       | filter_folders_with_changes \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
