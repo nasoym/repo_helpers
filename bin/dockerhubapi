@@ -239,7 +239,7 @@ elif [[ "$1" = "addgroup" ]]; then
     -H "Authorization:JWT $(cat ${jwt_file})" \
     -X POST \
     -H "Content-Type:application/json" \
-    --data-binary "{\"group_id\":${group_id},\"permission\":\"read\"}" \
+    --data-binary "{\"group_id\":${group_id},\"permission\":\"admin\"}" \
     "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/groups/"
 
 fi
