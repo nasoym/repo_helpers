@@ -1,5 +1,8 @@
 #!/bin/bash
-set -ef -o pipefail
+
+set -eufo pipefail
+trap 'echo "$0: line ${LINENO}: exiting because of error";exit 1' ERR
+
 source $(dirname $0)/bash_helpers/bash_helpers
 
 while getopts ":-:" OPTIONS; do 
@@ -22,6 +25,7 @@ mkdir -p $cookie_dir
 
 [[ -z "$username" ]] && { echo "username must be specified." >&2; exit 1; }
 
+
 if [[ "$1" = "login" ]]; then
   shift
   response="$( curl -s \
@@ -31,8 +35,23 @@ if [[ "$1" = "login" ]]; then
     "https://hub.docker.com/v2/users/login/" )"
   jq -r '.token' <<<"$response" > ${jwt_file}
 
+elif [[ "$1" = "check_login" ]]; then
+  if [[ -r "${jwt_file}" ]];then
+    cat ${jwt_file} \
+      | sed 's/^[^.]*\.//g' \
+      | base64 -d 2>/dev/null \
+      | jq '.exp' \
+      | xargs -I"{}" wcalc -q "({} - $(date +%s) ) > 1" \
+      | ( grep "1" >/dev/null || $0 login ) \
+      || true
+
+  else
+    $0 login
+  fi
+
 elif [[ "$1" = "create" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   github_repo="$1";shift; [[ -z "$github_repo" ]] && { echo "parameter missing" >&2; exit 1; }
   # user/repo
@@ -75,6 +94,7 @@ EOF
 
 elif [[ "$1" = "delete" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   read -p "If you are sure to delete the Repository: '${dockerhub_repo_name}' please type in the name again: " ENTERED_REPO_NAME
   [[ "$dockerhub_repo_name" != "$ENTERED_REPO_NAME" ]] && {
@@ -99,6 +119,7 @@ elif [[ "$1" = "list" ]]; then
 
 elif [[ "$1" = "info" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
@@ -106,6 +127,7 @@ elif [[ "$1" = "info" ]]; then
 
 elif [[ "$1" = "tags" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   : ${page:="1"}
   result="$(curl -s \
@@ -121,6 +143,7 @@ elif [[ "$1" = "tags" ]]; then
 
 elif [[ "$1" = "catalog" ]]; then
   shift
+  $0 check_login
   curl -i \
     -H "Authorization:JWT $(cat ${jwt_file})" \
     -H "Accept: application/json" \
@@ -128,6 +151,7 @@ elif [[ "$1" = "catalog" ]]; then
 
 elif [[ "$1" = "test" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
@@ -144,6 +168,7 @@ elif [[ "$1" = "test" ]]; then
 
 elif [[ "$1" = "build" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
@@ -154,6 +179,7 @@ elif [[ "$1" = "build" ]]; then
 
 elif [[ "$1" = "history" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
@@ -161,6 +187,7 @@ elif [[ "$1" = "history" ]]; then
 
 elif [[ "$1" = "buildcode" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   build_id="$1";shift; [[ -z "$build_id" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
@@ -172,12 +199,14 @@ elif [[ "$1" = "buildcode" ]]; then
 
 elif [[ "$1" = "listgroups" ]]; then
   shift
+  $0 check_login
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
     "https://hub.docker.com/v2/orgs/${dockerhub_namespace}/groups/"
 
 elif [[ "$1" = "repogroups" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
@@ -186,6 +215,7 @@ elif [[ "$1" = "repogroups" ]]; then
 
 elif [[ "$1" = "link-list" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
@@ -194,6 +224,7 @@ elif [[ "$1" = "link-list" ]]; then
 
 elif [[ "$1" = "link-add" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   linked_repo="$1";shift; [[ -z "$linked_repo" ]] && { echo "parameter missing" >&2; exit 1; }
 
@@ -209,6 +240,7 @@ elif [[ "$1" = "link-add" ]]; then
 
 elif [[ "$1" = "link-del" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   linked_id="$1";shift; [[ -z "$linked_id" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
@@ -218,6 +250,7 @@ elif [[ "$1" = "link-del" ]]; then
 
 elif [[ "$1" = "addgroup" ]]; then
   shift
+  $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   group="$1";shift; [[ -z "$group" ]] && { echo "parameter missing" >&2; exit 1; }
 
