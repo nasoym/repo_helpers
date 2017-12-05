@@ -20,6 +20,7 @@ read_rc_file
 : ${cookie_dir:="${HOME}/baufismart_cookies"}
 : ${jwt_file:="${cookie_dir}/dockerhub_jwt"}
 : ${dockerhub_namespace:="${username}"}
+: ${short_output:="0"}
 
 mkdir -p $cookie_dir
 
