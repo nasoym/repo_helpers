@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -eufo pipefail
+#set -eufo pipefail
+set -efo pipefail
 trap 'echo "$0: line ${LINENO}: exiting because of error";exit 1' ERR
 
 source $(dirname $0)/bash_helpers/bash_helpers
