@@ -12,6 +12,8 @@ esac; done; shift $(( OPTIND - 1 ));
 ORGA_NAME="$1";shift
 REPO_NAME="$1";shift
 
+script_path="$(dirname $(realpath $0))"
+
 if [[ "$public" -eq 1 ]];then
   GROUP_NAME="$1";shift
   githubapi -o $ORGA_NAME --public create $REPO_NAME
@@ -19,12 +21,17 @@ if [[ "$public" -eq 1 ]];then
   dockerhubapi -n $ORGA_NAME -p addgroup $REPO_NAME $GROUP_NAME
   githubapi -o $ORGA_NAME clone $REPO_NAME
 
+  cp ${script_path}/licenses/apache2.0 ${REPO_NAME}/LICENSE
+  touch ${REPO_NAME}/Dockerfile
+
 else
   GROUP_NAME="$1";shift
   githubapi -o $ORGA_NAME create $REPO_NAME
   dockerhubapi -n $ORGA_NAME -p create $REPO_NAME $ORGA_NAME/$REPO_NAME
   dockerhubapi -n $ORGA_NAME -p addgroup $REPO_NAME $GROUP_NAME
   githubapi -o $ORGA_NAME clone $REPO_NAME
+
+  touch ${REPO_NAME}/Dockerfile
 fi
 
 
