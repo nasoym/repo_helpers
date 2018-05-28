@@ -28,6 +28,11 @@ if [[ "$1" = "create" ]]; then #!#
     -d "{\"name\":\"${REPO_NAME}\",\"is_private\":\"true\",\"scm\":\"git\",\"fork_policy\":\"no_forks\",\"description\":\"${DESCRIPTION}\"}" \
     "https://bitbucket.org/api/2.0/repositories/${BITBUCKET_USER}/${REPO_NAME}"
 
+elif [[ "$1" = "createclone" ]]; then
+  shift
+  $0 create $@
+  $0 clone $@
+
 elif [[ "$1" = "test" ]]; then #!#
   shift
   REPO_NAME="$1";shift
