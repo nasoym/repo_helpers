@@ -80,8 +80,8 @@ elif [[ "$1" = "add_team" ]]; then
 elif [[ "$1" = "createclone" ]]; then
   shift
   if [[ -n $GITHUB_ORGANISATION ]];then
-    $0 create -o $GITHUB_ORGANISATION $@
-    $0 clone -o $GITHUB_ORGANISATION $@
+    $0 -o $GITHUB_ORGANISATION create $@
+    $0 -o $GITHUB_ORGANISATION clone $@
   else
     $0 create $@
     $0 clone $@
