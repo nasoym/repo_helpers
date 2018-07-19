@@ -27,8 +27,21 @@ mkdir -p $cookie_dir
 
 [[ -z "$username" ]] && { echo "username must be specified." >&2; exit 1; }
 
+if [[ "$#" -eq 0 ]];then
+  :
+  ${0} help
 
-if [[ "$1" = "login" ]]; then
+elif [[ "$1" == "help" ]];then shift
+  echo "${0}"
+  cat ${0} \
+    | grep '^elif' \
+    | sed \
+      -e 's/^elif \[\+ "\$1" =\+ "//g' \
+      -e 's/" \]\+;then *\(shift\)* *\(##\)*\(.*\)$/ \2\3/g' \
+      -e 's/^/    /g' \
+    || true
+
+elif [[ "$1" = "login" ]]; then
   shift
   response="$( curl -s \
     -X POST \
