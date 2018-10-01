@@ -17,5 +17,5 @@ REPO_NAME="$1";shift
 
 githubapi createclone $REPO_NAME
 dockerhubapi create $REPO_NAME nasoym/$REPO_NAME
-githubapi add_docker_service $REPO_NAME
+# githubapi add_docker_service $REPO_NAME
 
