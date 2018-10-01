@@ -200,6 +200,11 @@ elif [[ "$1" = "history" ]]; then
     -H "Authorization:JWT $(cat ${jwt_file})" \
     "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/buildhistory/"
 
+elif [[ "$1" = "web_url" ]]; then
+  shift
+  dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
+  echo "https://hub.docker.com/r/${dockerhub_namespace}/${dockerhub_repo_name}/"
+
 elif [[ "$1" = "buildcode" ]]; then
   shift
   $0 check_login
