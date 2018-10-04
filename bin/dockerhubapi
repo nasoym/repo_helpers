@@ -121,11 +121,12 @@ elif [[ "$1" = "delete" ]]; then
     "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/" \
   && echo "deleted"
 
-elif [[ "$1" = "list" ]]; then
-  shift
-    # -H "Authorization:JWT $(cat ${jwt_file})" \
+elif [[ "$1" = "list" ]]; then shift
+  : ${page:="1"}
+  $0 check_login
   response="$( curl -s \
-    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/?page=1&page_size=10000" )"
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/?page=${page}&page_size=10000" )"
   if [[ $short_output -eq 1 ]];then
     echo "$response" | jq -r '.results[]|"\(.namespace)/\(.name) \(.user) \(if (.is_private) then "private" else "" end )"'
   else
