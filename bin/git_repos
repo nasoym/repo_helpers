@@ -27,7 +27,7 @@ case $command in
     echo "$git_folders" \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
       | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
-      | parallel -k -j6 "\
+      | parallel -k -j3 "\
 if [ -x \"{//}/.local_git_update\" ];then \
   echo \$(basename {//}); \
   {//}/.local_git_update pull; \
