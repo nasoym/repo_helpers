@@ -197,7 +197,7 @@ elif [[ "$1" = "list" ]]; then #!#
     "https://api.github.com/${users_orgs}/${github_namespace}/repos?\
 type=all\
 ${PAGE+"&page=$PAGE"}\
-&per_page=100" \
+&per_page=1000" \
       )"
 #TODO is 100 the max for entries per page ?
 
