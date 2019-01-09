@@ -219,6 +219,14 @@ elif [[ "$1" = "add_docker_service" ]]; then #!#
     --data-binary '{"name":"docker","active":true,"events":["push"],"config":{}}' \
     "https://api.github.com/repos/${github_namespace}/${REPO_NAME}/hooks"
 
+elif [[ "$1" = "url" ]]; then #!#
+  shift
+  url="$1"; shift
+  curl -s \
+    -u "$GITHUB_USER:$(get_password)" \
+    -X GET \
+    "${url}"
+
 
 elif [[ "$1" = "search" ]]; then #!#
   shift
