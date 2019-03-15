@@ -225,8 +225,14 @@ elif [[ "$1" = "listgroups" ]]; then
     -H "Authorization:JWT $(cat ${jwt_file})" \
     "https://hub.docker.com/v2/orgs/${dockerhub_namespace}/groups/"
 
-elif [[ "$1" = "repogroups" ]]; then
-  shift
+elif [[ "$1" = "url" ]]; then shift
+  url="$1"; shift
+  $0 check_login
+  curl -s \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    "https://hub.docker.com/v2${url}"
+
+elif [[ "$1" = "repogroups" ]]; then shift
   $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
