@@ -59,10 +59,21 @@ elif [[ "$1" = "create" ]]; then
   team_setting=""
   if [[ -n $GITHUB_ORGANISATION ]];then
     url="https://api.github.com/orgs/${GITHUB_ORGANISATION}/repos"
-    team_setting=",\"team_id\":\"${team_id}\""
+    if [[ -n "${team_id:-""}" ]];then
+      team_setting=",\"team_id\":\"${team_id}\""
+    elif [[ -n "${team:-""}" ]];then
+      team_id="$(
+        ${0} -o ${GITHUB_ORGANISATION} teams \
+          | jq -erc --arg team "^${team}$" \
+          'map(select(.name|test($team;"i"))|.id)|if (length!=1) then error("result is not obvious: \(.)") else first end'
+        )"
+      team_setting=",\"team_id\":\"${team_id}\""
+    fi
+
   else
     url="https://api.github.com/user/repos"
   fi
+
   curl -i \
     -X POST \
     -u "${GITHUB_USER}:$(get_password)" \
@@ -84,6 +95,14 @@ elif [[ "$1" = "add_team" ]]; then
   [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
 
   if [[ -n $GITHUB_ORGANISATION ]];then
+
+    if [[ -n "${team:-""}" ]];then
+      team_id="$(
+        ${0} -o ${GITHUB_ORGANISATION} teams \
+          | jq -erc --arg team "^${team}$" \
+          'map(select(.name|test($team;"i"))|.id)|if (length!=1) then error("result is not obvious: \(.)") else first end'
+        )"
+    fi
     curl -i \
       -X PUT \
       -u "${GITHUB_USER}:$(get_password)" \
@@ -95,6 +114,7 @@ elif [[ "$1" = "createclone" ]]; then
   shift
   if [[ -n $GITHUB_ORGANISATION ]];then
     $0 -o $GITHUB_ORGANISATION create $@
+    $0 -o $GITHUB_ORGANISATION add_team $@
     $0 -o $GITHUB_ORGANISATION clone $@
   else
     $0 create $@
