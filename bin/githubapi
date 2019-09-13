@@ -133,6 +133,9 @@ elif [[ "$1" = "delete" ]]; then #!#
     -X DELETE \
     -u "$GITHUB_USER:$(get_password)" \
 "https://api.github.com/repos/${github_namespace}/${REPO_NAME}"
+  if [[ -d ${REPO_NAME} ]];then
+    rm -rf ${REPO_NAME}
+  fi
 
 elif [[ "$1" = "clone" ]]; then #!#
   shift
