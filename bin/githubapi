@@ -207,11 +207,14 @@ elif [[ "$1" = "hooks" ]]; then #!#
 
 elif [[ "$1" = "issues" ]]; then #!#
   shift
-  REPO_NAME="$1"; shift
-  [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+  # https://developer.github.com/v3/issues/
+  # REPO_NAME="$1"; shift
+  # [[ -z "$REPO_NAME" ]] && { echo "repository name must be specified." >&2; exit 1; }
+  : ${query:="state=open"}
   curl -s \
     -u "$GITHUB_USER:$(get_password)" \
-"https://api.github.com/repos/${github_namespace}/${REPO_NAME}/issues"
+    "https://api.github.com/orgs/${github_namespace}/issues?${query}"
+    # "https://api.github.com/repos/${github_namespace}/${REPO_NAME}/issues"
 
 elif [[ "$1" = "list" ]]; then #!#
   shift
