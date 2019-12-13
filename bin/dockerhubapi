@@ -169,10 +169,10 @@ elif [[ "$1" = "test" ]]; then
   shift
   $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
-  curl -s \
+  curl -sfS \
     -H "Authorization:JWT $(cat ${jwt_file})" \
     -H "Accept: application/json" \
-    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/tags/"
+    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/builds/"
 
     # "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/tags/"
     # "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/buildhistory/?page_size=100"
@@ -197,9 +197,21 @@ elif [[ "$1" = "history" ]]; then
   shift
   $0 check_login
   dockerhub_repo_name="$1";shift; [[ -z "$dockerhub_repo_name" ]] && { echo "parameter missing" >&2; exit 1; }
-  curl -s \
+  curl -sfS \
     -H "Authorization:JWT $(cat ${jwt_file})" \
-    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/buildhistory/"
+    -L \
+    -G \
+    --data-urlencode "include_related=true" \
+    --data-urlencode "limit=100" \
+    --data-urlencode "object=/api/repo/v1/repository/${dockerhub_namespace}/${dockerhub_repo_name}/" \
+    "https://hub.docker.com/api/audit/v1/action"
+
+# Request URL: https://hub.docker.com/api/audit/v1/action/?
+# include_related=true&
+# limit=100&
+# object=
+# /api/repo/v1/repository/hypoport/ep2-devops-teamcity-scripts/
+
 
 elif [[ "$1" = "web_url" ]]; then
   shift
@@ -213,7 +225,7 @@ elif [[ "$1" = "buildcode" ]]; then
   build_id="$1";shift; [[ -z "$build_id" ]] && { echo "parameter missing" >&2; exit 1; }
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
-    "https://hub.docker.com/v2/repositories/${dockerhub_namespace}/${dockerhub_repo_name}/buildhistory/${build_id}/"
+    "https://hub.docker.com/repository/registry-1.docker.io/${dockerhub_namespace}/${dockerhub_repo_name}/builds/${build_id}/"
 
 # https://hub.docker.com/v2/repositories/nasoym/bss_automation_demo/buildhistory/?page_size=100
 # https://hub.docker.com/v2/repositories/nasoym/bss_automation_demo/buildhistory/b7qdkq6s3dcn2qvvn4euwmt/
@@ -230,7 +242,16 @@ elif [[ "$1" = "url" ]]; then shift
   $0 check_login
   curl -s \
     -H "Authorization:JWT $(cat ${jwt_file})" \
-    "https://hub.docker.com/v2${url}"
+    "https://hub.docker.com/${url}"
+
+elif [[ "$1" = "abc" ]]; then shift
+  curl -s \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    "https://hub.docker.com/v2/hypoport/ep2-devops-teamcity-scripts/manifests/latest"
+    # "https://registry.hub.docker.com/v2/hypoport/ep2-devops-teamcity-scripts/manifests/latest"
+
+# /v2/myapp/manifests/mytag
+
 
 elif [[ "$1" = "repogroups" ]]; then shift
   $0 check_login
