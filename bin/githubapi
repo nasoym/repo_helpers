@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
-set -ef -o pipefail
-set -o nounset
+set -o errexit  # abort when any commands exits with error
+set -o pipefail # abort when any command in a pipe exits with error
+set -o nounset  # abort when any unset variable is used
+set -o noglob # prevent bash from expanding glob
+set -o errtrace # inherits trap on ERR in function and subshell
+trap 'echo status:$? line:$LINENO line:$BASH_LINENO command:"$BASH_COMMAND" functions:$(printf " %s" ${FUNCNAME[@]:-})' ERR
+if [[ "${trace:=0}" -eq 1 ]];then
+  PS4='${LINENO}: '
+  set -x
+  export trace
+fi
 
 source $(dirname $0)/bash_helpers/bash_helpers
 
@@ -33,6 +42,7 @@ read_rc_file
 : ${PASSWORD:=""}
 : ${RAW_JSON_OUTPUT:=0}
 : ${local_rename:=0}
+: ${SHORT:=0}
 
 [[ -z "$GITHUB_USER" ]] && { echo "github user must be specified." >&2; exit 1; }
 
@@ -260,6 +270,14 @@ elif [[ "$1" = "search" ]]; then #!#
   : ${pagecount:="100"}
   : ${page:="1"}
   # https://developer.github.com/v3/search/#search-code
+  # https://help.github.com/en/github/searching-for-information-on-github/searching-code
+
+  # Only files smaller than 384 KB are searchable.
+  # https://stackoverflow.com/questions/26433561/how-to-search-on-github-to-get-exact-matches-like-what-quotes-do-for-google
+  # You can't use the following wildcard characters as part of your search query:
+  # . , : ; / \ ` ' " = * ! ? # $ & + ^ | ~ < > ( ) { } [ ]
+  # The search will simply ignore these symbols.
+
   curl -s \
     -u "$GITHUB_USER:$(get_password)" \
     -H 'Accept: application/vnd.github.v3.text-match+json' \
@@ -267,8 +285,42 @@ elif [[ "$1" = "search" ]]; then #!#
     --data-urlencode "q=${query}" \
     --data-urlencode "per_page=${pagecount}" \
     --data-urlencode "page=${page}" \
-    "https://api.github.com/search/code"
+    "https://api.github.com/search/code" |
+    if [[ "${SHORT}" == "1" ]];then
+      jq '
+        .total_count as $total_count|
+        .incomplete_results as $incomplete_results|
+        .items|
+        map({
+              repository:(.repository.full_name),
+              path,
+              matches:(.text_matches|map(select(.property=="content")|.fragment|split("\n"))|flatten)
+            })|
+        [{total_count:$total_count,incomplete_results:$incomplete_results}]+.
+        '
+    else
+      cat -
+    fi
 # ?q=socat+in:file+filename:Dockerfile\
+# 'org:hypoport org.mongodb:mongo-java-driver:2.14.3'
+# '"docker push" in:file org:hypoport language:shell'
+# 'docker in:file repo:hypoport/ep-snapview language:shell '
+# jq '.items|map(.repository.full_name)'
+# jq '.items|map({repository:(.repository.full_name),path,matches:(.text_matches|map(.fragment|split("\n")))})'
+
+# in:file
+# in:path
+# org:..
+# repo:user/repo
+# extension:sh
+
+# {
+#   "total_count": 9,
+#   "incomplete_results": true,
+#   "items": [
+#     {
+
+
 
 elif [[ "$1" = "content" ]]; then #!#
   shift
