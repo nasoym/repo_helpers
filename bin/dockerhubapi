@@ -206,6 +206,26 @@ elif [[ "$1" = "history" ]]; then
     --data-urlencode "object=/api/repo/v1/repository/${dockerhub_namespace}/${dockerhub_repo_name}/" \
     "https://hub.docker.com/api/audit/v1/action"
 
+elif [[ "$1" = "object_url" ]]; then shift
+  $0 check_login
+  url="$1"; shift
+  curl -sfS \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    -L \
+    -G \
+    --data-urlencode "include_related=true" \
+    --data-urlencode "limit=100" \
+    --data-urlencode "object=${url}" \
+    "https://hub.docker.com/api/audit/v1/action"
+
+elif [[ "$1" = "url2" ]]; then shift
+  $0 check_login
+  url="$1"; shift
+  curl -sfS \
+    -H "Authorization:JWT $(cat ${jwt_file})" \
+    -L \
+    "https://hub.docker.com${url}"
+
 # Request URL: https://hub.docker.com/api/audit/v1/action/?
 # include_related=true&
 # limit=100&
