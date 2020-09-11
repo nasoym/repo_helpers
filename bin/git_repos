@@ -23,6 +23,13 @@ function filter_folders_with_changes() {
 export -f filter_folders_with_changes
 
 case $command in 
+  clean_branches)
+    echo "$git_folders" \
+      | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
+      | if [[ -n "$INCLUDE" ]]; then grep -E "$INCLUDE"; else cat; fi \
+      | parallel -k -j3 "cd {//}; git remote prune origin"
+      # | parallel -k -j3 "cd {//}; git branch --merged | grep -v '^*' | xargs -r echo {//} - "
+    ;;
   pull)
     echo "$git_folders" \
       | if [[ -n "$EXCLUDE" ]]; then grep -v -E "$EXCLUDE"; else cat; fi \
