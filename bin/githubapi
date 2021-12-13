@@ -223,7 +223,8 @@ elif [[ "$1" = "issues" ]]; then #!#
   : ${query:="state=open"}
   curl -s \
     -u "$GITHUB_USER:$(get_password)" \
-    "https://api.github.com/orgs/${github_namespace}/issues?${query}"
+    "https://api.github.com/issues?${query}"
+    # "https://api.github.com/orgs/${github_namespace}/issues?${query}"
     # "https://api.github.com/repos/${github_namespace}/${REPO_NAME}/issues"
 
 elif [[ "$1" = "list" ]]; then #!#
